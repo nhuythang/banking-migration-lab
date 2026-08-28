@@ -1,0 +1,12 @@
+# Render blueprint — deploy 1 click sau khi kết nối repo GitHub.
+# https://render.com  ->  New +  ->  Blueprint  ->  chọn repo này.
+services:
+  - type: web
+    name: banking-migration-lab
+    runtime: docker
+    plan: free                 # free tier: ngủ sau ~15' không dùng, tự thức khi có request
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /old/health
+    envVars:
+      - key: PORT
+        value: 8080

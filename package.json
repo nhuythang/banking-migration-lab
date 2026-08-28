@@ -1,0 +1,25 @@
+{
+  "name": "banking-migration-lab",
+  "version": "2.0.0",
+  "description": "Two-system lab (old SQL Server vs new GaussDB) for practicing API migration testing with baseline reconciliation",
+  "type": "commonjs",
+  "scripts": {
+    "build": "node old-system/build.js && node new-system/build.js",
+    "build:old": "node old-system/build.js",
+    "build:new": "node new-system/build.js",
+    "start:old": "node old-system/server.js",
+    "start:new": "node new-system/server.js",
+    "start:gateway": "node deploy/gateway.js",
+    "start": "concurrently -n old,new -c blue,magenta \"npm:start:old\" \"npm:start:new\"",
+    "reconcile": "node harness/reconcile.mjs",
+    "test": "node --test harness/",
+    "reset": "rm -f old-system/*.db* new-system/*.db* && npm run build"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.3.0",
+    "express": "^4.21.0"
+  },
+  "devDependencies": {
+    "concurrently": "^9.0.0"
+  }
+}
