@@ -1,0 +1,1105 @@
+{
+  "info": {
+    "_postman_id": "a76b6c6e-1a53-4095-b9b4-95d7634770bf",
+    "name": "Banking Migration Lab",
+    "description": "OLD (SQL Server, baseline) vs NEW (GaussDB, migrated with bugs) — same API contract.\n\nSet `oldBase` / `newBase` via a Postman environment:\n- local-gateway: http://localhost:8080/old  +  /new\n- local-split:   http://localhost:3001       +  http://localhost:3002\n- render:        https://<app>.onrender.com/old  +  /new\n\nHealth is at `{{base}}/health`; the API is under `{{base}}/api/v1`.\nAnswer key for the bugs: BUGS.md in the repo.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Health",
+      "id": "81b114dd-5157-4348-adfa-3731da780893",
+      "description": "Liveness — matches render.yaml healthCheckPath (/old/health).",
+      "item": [
+        {
+          "name": "OLD health",
+          "id": "93c2f2f2-4598-434d-bf4e-3f6836369d51",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{oldBase}}/health",
+              "host": [
+                "{{oldBase}}"
+              ],
+              "path": [
+                "health"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "NEW health",
+          "id": "31f55743-22d0-441a-b7b3-3794295b356b",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{newBase}}/health",
+              "host": [
+                "{{newBase}}"
+              ],
+              "path": [
+                "health"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "OLD — SQL Server (baseline / truth)",
+      "id": "f8e1286f-c3fd-4136-b812-1cdb78e9eae2",
+      "description": "Correct data. Use as the oracle.",
+      "item": [
+        {
+          "name": "List users",
+          "id": "207763f1-326b-406e-a9c0-a00dfddb20b1",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{oldBase}}/api/v1/users?sort=&limit=20&offset=0",
+              "host": [
+                "{{oldBase}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users"
+              ],
+              "query": [
+                {
+                  "key": "sort",
+                  "value": ""
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                },
+                {
+                  "key": "offset",
+                  "value": "0"
+                }
+              ]
+            },
+            "description": "sort = `name` to exercise collation (BUG-05c). limit/offset optional."
+          },
+          "response": []
+        },
+        {
+          "name": "List users — sort=name",
+          "id": "0bb96b64-7696-4896-b1e8-5a8ba8519548",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{oldBase}}/api/v1/users?sort=name&limit=10",
+              "host": [
+                "{{oldBase}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users"
+              ],
+              "query": [
+                {
+                  "key": "sort",
+                  "value": "name"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "OLD sorts Vietnamese correctly; NEW uses byte-order (BUG-05c)."
+          },
+          "response": []
+        },
+        {
+          "name": "Get user by id",
+          "id": "2adea1c0-2d67-4256-acc6-a5e78255f3cc",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{oldBase}}/api/v1/users/3",
+              "host": [
+                "{{oldBase}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "3"
+              ]
+            },
+            "description": "user 3 = 'Lê Ngọc Ánh' — shows mojibake / key-case / datetime drift on NEW."
+          },
+          "response": []
+        },
+        {
+          "name": "Get user by email",
+          "id": "2261aed7-5dba-4b41-9ab2-e6273bb93737",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{oldBase}}/api/v1/users/by-email?email=user2.vip@bankdemo.vn",
+              "host": [
+                "{{oldBase}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "by-email"
+              ],
+              "query": [
+                {
+                  "key": "email",
+                  "value": "user2.vip@bankdemo.vn"
+                }
+              ]
+            },
+            "description": "Lowercased email: OLD 200 (case-insensitive), NEW 404 (BUG-05b)."
+          },
+          "response": []
+        },
+        {
+          "name": "User accounts",
+          "id": "45f0a2b7-71da-47f8-9946-afdfa3bcdf36",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{oldBase}}/api/v1/users/1/accounts",
+              "host": [
+                "{{oldBase}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "1",
+                "accounts"
+              ]
+            },
+            "description": "Balance precision: 4dp on OLD, 2dp on NEW (BUG-03)."
+          },
+          "response": []
+        },
+        {
+          "name": "User devices",
+          "id": "b21ff203-8a3d-4193-98da-5ec1626bd045",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{oldBase}}/api/v1/users/7/devices",
+              "host": [
+                "{{oldBase}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "7",
+                "devices"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "User notifications",
+          "id": "d04459b6-619a-43b6-ba86-9ba808a1fdd1",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{oldBase}}/api/v1/users/3/notifications",
+              "host": [
+                "{{oldBase}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "3",
+                "notifications"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List accounts",
+          "id": "a17d8669-472e-4334-9c13-3c8bcdc79cbb",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{oldBase}}/api/v1/accounts",
+              "host": [
+                "{{oldBase}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "accounts"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get account by id",
+          "id": "98fac57c-da76-4848-a43d-34fe3fd04518",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{oldBase}}/api/v1/accounts/1",
+              "host": [
+                "{{oldBase}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "accounts",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create account",
+          "id": "b220dba4-7c91-4cb4-9ad8-b26f2037ee0d",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{oldBase}}/api/v1/accounts",
+              "host": [
+                "{{oldBase}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "accounts"
+              ]
+            },
+            "description": "OLD 201 Created; NEW 409 duplicate key — sequence not reset after migrate (BUG-06).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"user_id\": 5,\n  \"currency\": \"VND\",\n  \"balance\": 1000\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List devices",
+          "id": "bd264b73-06cb-43fa-89d4-179759d1cffb",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{oldBase}}/api/v1/devices",
+              "host": [
+                "{{oldBase}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "devices"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List notifications",
+          "id": "9128db35-f493-4a55-a055-ca5508dc7beb",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{oldBase}}/api/v1/notifications",
+              "host": [
+                "{{oldBase}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "notifications"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "NEW — GaussDB (migrated / buggy)",
+      "id": "63d6d9b5-5696-4026-a949-63aa3f44e808",
+      "description": "Migrated from OLD, with the 8 seeded bugs.",
+      "item": [
+        {
+          "name": "List users",
+          "id": "dbae7f63-4e9f-4199-8dc5-71c3d2d7247b",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{newBase}}/api/v1/users?sort=&limit=20&offset=0",
+              "host": [
+                "{{newBase}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users"
+              ],
+              "query": [
+                {
+                  "key": "sort",
+                  "value": ""
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                },
+                {
+                  "key": "offset",
+                  "value": "0"
+                }
+              ]
+            },
+            "description": "sort = `name` to exercise collation (BUG-05c). limit/offset optional."
+          },
+          "response": []
+        },
+        {
+          "name": "List users — sort=name",
+          "id": "6e24c1e7-9e5f-486f-ae5c-1899f2400542",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{newBase}}/api/v1/users?sort=name&limit=10",
+              "host": [
+                "{{newBase}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users"
+              ],
+              "query": [
+                {
+                  "key": "sort",
+                  "value": "name"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "OLD sorts Vietnamese correctly; NEW uses byte-order (BUG-05c)."
+          },
+          "response": []
+        },
+        {
+          "name": "Get user by id",
+          "id": "235b9c21-1d0b-4313-8f72-c150ad9c45b2",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{newBase}}/api/v1/users/3",
+              "host": [
+                "{{newBase}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "3"
+              ]
+            },
+            "description": "user 3 = 'Lê Ngọc Ánh' — shows mojibake / key-case / datetime drift on NEW."
+          },
+          "response": []
+        },
+        {
+          "name": "Get user by email",
+          "id": "113f8b30-8a1a-4538-a844-83418d57b31c",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{newBase}}/api/v1/users/by-email?email=user2.vip@bankdemo.vn",
+              "host": [
+                "{{newBase}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "by-email"
+              ],
+              "query": [
+                {
+                  "key": "email",
+                  "value": "user2.vip@bankdemo.vn"
+                }
+              ]
+            },
+            "description": "Lowercased email: OLD 200 (case-insensitive), NEW 404 (BUG-05b)."
+          },
+          "response": []
+        },
+        {
+          "name": "User accounts",
+          "id": "3db84c0b-60ea-471e-ac5b-aafa7d58ae19",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{newBase}}/api/v1/users/1/accounts",
+              "host": [
+                "{{newBase}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "1",
+                "accounts"
+              ]
+            },
+            "description": "Balance precision: 4dp on OLD, 2dp on NEW (BUG-03)."
+          },
+          "response": []
+        },
+        {
+          "name": "User devices",
+          "id": "3fa9e94b-b962-4e70-a206-80a7f116fe41",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{newBase}}/api/v1/users/7/devices",
+              "host": [
+                "{{newBase}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "7",
+                "devices"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "User notifications",
+          "id": "f14ce7c3-c969-4003-b663-d21af48f5095",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{newBase}}/api/v1/users/3/notifications",
+              "host": [
+                "{{newBase}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "3",
+                "notifications"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List accounts",
+          "id": "a9ff419a-54e4-48f3-afcd-d0e427333891",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{newBase}}/api/v1/accounts",
+              "host": [
+                "{{newBase}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "accounts"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get account by id",
+          "id": "d58afa54-ebc4-46ff-9359-4eb23ec20ae5",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{newBase}}/api/v1/accounts/1",
+              "host": [
+                "{{newBase}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "accounts",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create account",
+          "id": "9bd28519-6a51-47e1-8b2b-13740ef90871",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{newBase}}/api/v1/accounts",
+              "host": [
+                "{{newBase}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "accounts"
+              ]
+            },
+            "description": "OLD 201 Created; NEW 409 duplicate key — sequence not reset after migrate (BUG-06).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"user_id\": 5,\n  \"currency\": \"VND\",\n  \"balance\": 1000\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List devices",
+          "id": "1a6cb609-399c-40fe-bc63-b25565ceaa39",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{newBase}}/api/v1/devices",
+              "host": [
+                "{{newBase}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "devices"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List notifications",
+          "id": "13fdbc5b-5dd9-443d-97d7-060445afe318",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{newBase}}/api/v1/notifications",
+              "host": [
+                "{{newBase}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "notifications"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Bug demos — OLD vs NEW",
+      "id": "c8a3afab-49ce-4933-87d7-0190229dd9b4",
+      "description": "Run each pair back to back. The NEW request carries a test script asserting the known divergence. Full answer key: BUGS.md.",
+      "item": [
+        {
+          "name": "BUG-01/02/04b/05a — user 3 (OLD)",
+          "id": "72658582-d361-4a77-a8e3-19b09a482fbc",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{oldBase}}/api/v1/users/3",
+              "host": [
+                "{{oldBase}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "3"
+              ]
+            },
+            "description": "Baseline: FullName 'Lê Ngọc Ánh', PascalCase keys, IsActive 0/1, datetime with .mmm."
+          },
+          "response": []
+        },
+        {
+          "name": "BUG-01/02/04b/05a — user 3 (NEW)",
+          "id": "0876c229-d911-4da5-9405-a7f31889b8bc",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{newBase}}/api/v1/users/3",
+              "host": [
+                "{{newBase}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "3"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const b = pm.response.json();",
+                  "pm.test('BUG-05a: keys folded to lowercase', () => pm.expect(b).to.have.property('fullname'));",
+                  "pm.test('BUG-01: fullname is mojibake', () => pm.expect(b.fullname).to.not.eql('Lê Ngọc Ánh'));",
+                  "pm.test('BUG-04b: isactive is boolean, not 0/1', () => pm.expect(b.isactive).to.be.a('boolean'));",
+                  "pm.test('BUG-02: createdat lost milliseconds', () => pm.expect(b.createdat).to.not.match(/\\.\\d{3}$/));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "BUG-03 — user 1 accounts (OLD)",
+          "id": "40c88d21-d066-4c11-b5da-e1b38f2ddf35",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{oldBase}}/api/v1/users/1/accounts",
+              "host": [
+                "{{oldBase}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "1",
+                "accounts"
+              ]
+            },
+            "description": "Baseline: balance keeps 4 decimal places, e.g. 373590484.8168."
+          },
+          "response": []
+        },
+        {
+          "name": "BUG-03 — user 1 accounts (NEW)",
+          "id": "eb076abb-5233-42a3-88ad-7ea27a614e37",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{newBase}}/api/v1/users/1/accounts",
+              "host": [
+                "{{newBase}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "1",
+                "accounts"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const rows = pm.response.json();",
+                  "pm.test('BUG-03: balance truncated to <=2dp', () => {",
+                  "  rows.forEach(r => {",
+                  "    const dp = (String(r.balance).split('.')[1] || '').length;",
+                  "    pm.expect(dp, `account ${r.accountid}`).to.be.at.most(2);",
+                  "  });",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "BUG-05b — by-email lowercase (OLD)",
+          "id": "ba61a16f-0ff3-4565-a4cb-fe4844789573",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{oldBase}}/api/v1/users/by-email?email=user2.vip@bankdemo.vn",
+              "host": [
+                "{{oldBase}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "by-email"
+              ],
+              "query": [
+                {
+                  "key": "email",
+                  "value": "user2.vip@bankdemo.vn"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('OLD: case-insensitive email lookup -> 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "BUG-05b — by-email lowercase (NEW)",
+          "id": "6207e66c-5858-4fa4-98da-5e3c5a02f445",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{newBase}}/api/v1/users/by-email?email=user2.vip@bankdemo.vn",
+              "host": [
+                "{{newBase}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "by-email"
+              ],
+              "query": [
+                {
+                  "key": "email",
+                  "value": "user2.vip@bankdemo.vn"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('BUG-05b: NEW case-sensitive lookup -> 404', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "BUG-05c — sort=name (OLD)",
+          "id": "f07c8f91-27d8-4ad5-a9d9-794a3e651f88",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{oldBase}}/api/v1/users?sort=name&limit=6",
+              "host": [
+                "{{oldBase}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users"
+              ],
+              "query": [
+                {
+                  "key": "sort",
+                  "value": "name"
+                },
+                {
+                  "key": "limit",
+                  "value": "6"
+                }
+              ]
+            },
+            "description": "Baseline: Vietnamese-aware collation order."
+          },
+          "response": []
+        },
+        {
+          "name": "BUG-05c — sort=name (NEW)",
+          "id": "11f2c0c8-d351-455e-9e75-8900d9d234eb",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{newBase}}/api/v1/users?sort=name&limit=6",
+              "host": [
+                "{{newBase}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users"
+              ],
+              "query": [
+                {
+                  "key": "sort",
+                  "value": "name"
+                },
+                {
+                  "key": "limit",
+                  "value": "6"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const names = pm.response.json().map(u => u.fullname);",
+                  "pm.test('NEW returned rows', () => pm.expect(names.length).to.be.above(0));",
+                  "// Compare this order against the OLD request above — byte-order sort diverges (BUG-05c)."
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "BUG-06 — create account (OLD)",
+          "id": "4a792878-a4d2-4390-851e-99bf002434f5",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{oldBase}}/api/v1/accounts",
+              "host": [
+                "{{oldBase}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "accounts"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"user_id\": 5,\n  \"currency\": \"VND\",\n  \"balance\": 1000\n}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('OLD: insert succeeds -> 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "BUG-06 — create account (NEW)",
+          "id": "7a4a678b-ef10-4f08-9cee-b44efb9a707f",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{newBase}}/api/v1/accounts",
+              "host": [
+                "{{newBase}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "accounts"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"user_id\": 5,\n  \"currency\": \"VND\",\n  \"balance\": 1000\n}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('BUG-06: sequence behind max(id) -> 409 duplicate key', () => pm.response.to.have.status(409));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "BUG-04a — user 2 notifications (OLD)",
+          "id": "f9f67b8e-6a6d-40c6-8976-f484a7ef8524",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{oldBase}}/api/v1/users/2/notifications",
+              "host": [
+                "{{oldBase}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "2",
+                "notifications"
+              ]
+            },
+            "description": "Baseline: IsRead can be null (unknown)."
+          },
+          "response": []
+        },
+        {
+          "name": "BUG-04a — user 2 notifications (NEW)",
+          "id": "f2d6b5c6-1049-46a1-acf2-4298b166ecb1",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{newBase}}/api/v1/users/2/notifications",
+              "host": [
+                "{{newBase}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "2",
+                "notifications"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const rows = pm.response.json();",
+                  "pm.test('BUG-04a: no null isread — coalesced to false', () => {",
+                  "  rows.forEach(r => pm.expect(r.isread, `notif ${r.notificationid}`).to.not.be.null);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "oldBase",
+      "value": "http://localhost:8080/old",
+      "type": "string"
+    },
+    {
+      "key": "newBase",
+      "value": "http://localhost:8080/new",
+      "type": "string"
+    }
+  ]
+}
