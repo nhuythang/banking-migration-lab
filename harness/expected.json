@@ -1,0 +1,54 @@
+[
+  {
+    "table": "users",
+    "oldCount": 40,
+    "newCount": 40,
+    "missingInNew": [],
+    "extraInNew": [],
+    "keyCaseDrift": ["UserId", "FullName", "Email", "Phone", "IsActive", "CreatedAt", "LastLogin"],
+    "fields": {
+      "createdat": { "count": 40, "category": "datetime" },
+      "lastlogin": { "count": 36, "category": "datetime" },
+      "fullname": { "count": 17, "category": "unicode" },
+      "isactive": { "count": 1, "category": "null_lost" }
+    }
+  },
+  {
+    "table": "accounts",
+    "oldCount": 64,
+    "newCount": 64,
+    "missingInNew": [],
+    "extraInNew": [],
+    "keyCaseDrift": ["AccountId", "UserId", "AccountNo", "Currency", "Balance", "IsPrimary", "CreatedAt"],
+    "fields": {
+      "balance": { "count": 64, "category": "number/money" },
+      "createdat": { "count": 64, "category": "datetime" }
+    }
+  },
+  {
+    "table": "devices",
+    "oldCount": 81,
+    "newCount": 81,
+    "missingInNew": [],
+    "extraInNew": [],
+    "keyCaseDrift": ["DeviceId", "UserId", "DeviceName", "Model", "OsVersion", "IsTrusted", "LastSeen"],
+    "fields": {
+      "lastseen": { "count": 74, "category": "datetime" },
+      "devicename": { "count": 14, "category": "unicode" },
+      "istrusted": { "count": 8, "category": "null_lost" }
+    }
+  },
+  {
+    "table": "notifications",
+    "oldCount": 113,
+    "newCount": 113,
+    "missingInNew": [],
+    "extraInNew": [],
+    "keyCaseDrift": ["NotificationId", "UserId", "Title", "Content", "IsRead", "CreatedAt"],
+    "fields": {
+      "createdat": { "count": 113, "category": "datetime" },
+      "isread": { "count": 21, "category": "null_lost" },
+      "content": { "count": 48, "category": "unicode" }
+    }
+  }
+]

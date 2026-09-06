@@ -12,6 +12,8 @@
     "start:gateway": "node deploy/gateway.js",
     "start": "concurrently -n old,new -c blue,magenta \"npm:start:old\" \"npm:start:new\"",
     "reconcile": "node harness/reconcile.mjs",
+    "check": "node harness/check.mjs",
+    "snapshot": "node harness/snapshot.mjs",
     "test": "node --test harness/",
     "reset": "rm -f old-system/*.db* new-system/*.db* && npm run build"
   },
