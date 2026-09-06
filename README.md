@@ -19,9 +19,17 @@ npm start             # chạy CẢ 2 server (concurrently): OLD:3001, NEW:3002
 # hoặc 2 terminal:  npm run start:old   |   npm run start:new
 
 npm run reconcile     # baseline comparison: diff OLD vs NEW theo từng field -> báo cáo + report.json
+npm run check         # so report.json với harness/expected.json (cổng CI) — cần reconcile chạy trước
 npm test              # test parity chức năng (lỗi hành vi mà recon không thấy)
 npm run reset         # xoá & build lại (deterministic)
 ```
+
+## CI
+
+`.github/workflows/reconcile.yml` chạy mỗi push/PR: build 2 DB → start 2 server → `reconcile` →
+`check`. `reconcile` luôn exit 1 (lab cố tình có **500 field lệch**) nên **cổng pass/fail là
+`npm run check`**: bề mặt lỗi phải khớp `harness/expected.json`. Sửa `generate.js` / `bugs.js` /
+`repo.js` mà quên cập nhật snapshot → CI đỏ. Chốt snapshot mới: `npm run reconcile && npm run snapshot`.
 
 ## Hai tầng phát hiện lỗi — dùng cả hai
 

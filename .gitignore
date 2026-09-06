@@ -4,3 +4,4 @@ node_modules/
 **/*.db-shm
 harness/report.json
 *.zip
+.DS_Store

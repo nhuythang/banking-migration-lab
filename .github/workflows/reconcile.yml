@@ -1,0 +1,73 @@
+name: reconcile
+
+# Chạy baseline reconciliation OLD vs NEW mỗi lần push / PR.
+# Cổng pass/fail = harness/check.mjs: bề mặt lỗi (500 field lệch, 8 lỗi) phải khớp
+# harness/expected.json. Sửa generate.js / bugs.js / repo.js mà quên cập nhật snapshot -> đỏ.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  reconcile:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Build both databases (deterministic)
+        run: npm run build
+
+      - name: Start OLD (:3001) + NEW (:3002)
+        run: nohup npm start > servers.log 2>&1 &
+
+      - name: Wait for servers
+        run: |
+          for port in 3001 3002; do
+            for i in $(seq 1 30); do
+              curl -sf "http://localhost:$port/health" > /dev/null && break
+              sleep 1
+            done
+            curl -sf "http://localhost:$port/health" > /dev/null \
+              || { echo "::error::server on :$port did not come up"; cat servers.log; exit 1; }
+          done
+
+      - name: Reconcile (exit 1 là bình thường — lab luôn có field lệch)
+        run: |
+          set -o pipefail
+          node harness/reconcile.mjs 2>&1 | tee reconcile-output.txt || true
+
+      - name: Guard — bề mặt lỗi khớp snapshot
+        run: node harness/check.mjs
+
+      - name: Job summary
+        if: always()
+        run: |
+          {
+            echo '### Reconciliation report'
+            echo
+            echo '```'
+            cat reconcile-output.txt 2>/dev/null || echo '(reconcile không chạy)'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload report.json
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reconcile-report
+          path: |
+            harness/report.json
+            reconcile-output.txt
+            servers.log
+          if-no-files-found: ignore
