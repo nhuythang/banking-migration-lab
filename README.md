@@ -63,3 +63,9 @@ harness/parity.test.mjs  test parity chức năng
 
 > Danh mục lỗi + kết quả kỳ vọng đầy đủ: **BUGS.md** (spoiler).
 > `reconcile.mjs` chính là "oracle" — nếu muốn tự luyện viết test tìm lỗi, đừng đọc report vội.
+
+## Người mới bắt đầu
+
+Đọc **[docs/practice-guide.md](docs/practice-guide.md)** — hướng dẫn từng bước làm việc với bản
+deploy, quy trình tự tìm 8 lỗi, và diễn giải chi tiết từng lỗi (nguyên nhân gốc SQL Server → GaussDB,
+vì sao nguy hiểm, cách viết assertion, cái bẫy thường gặp).
