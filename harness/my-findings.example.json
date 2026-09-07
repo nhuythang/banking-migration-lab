@@ -1,0 +1,22 @@
+{
+  "name": "(tên bạn)",
+  "_huong_dan": "Copy file này thành harness/my-findings.json rồi điền. Với MỖI sai lệch OLD vs NEW bạn tìm được, thêm một object vào mảng 'findings': 'category' chọn từ '_category_hop_le' bên dưới; 'where' ghi endpoint + field; 'evidence' BẮT BUỘC (>= 8 ký tự) — ghi rõ OLD thấy gì, NEW thấy gì. Chấm: npm run exercise. Xem gợi ý phần thiếu: npm run exercise -- --reveal.",
+  "_category_hop_le": [
+    "unicode",
+    "datetime",
+    "money",
+    "null",
+    "schema-keycase",
+    "boolean-type",
+    "case-sensitivity",
+    "collation",
+    "sequence"
+  ],
+  "findings": [
+    {
+      "category": "unicode",
+      "where": "GET /users/3 · field fullname (và quét GET /users toàn bộ)",
+      "evidence": "OLD 'Lê Ngọc Ánh' — NEW 'LÃª Ngá»c Ãnh'. Quét cả bảng: 17/40 user bị hỏng, không phải tất cả."
+    }
+  ]
+}

@@ -21,6 +21,7 @@ npm start             # chạy CẢ 2 server (concurrently): OLD:3001, NEW:3002
 npm run reconcile     # baseline comparison: diff OLD vs NEW theo từng field -> báo cáo + report.json
 npm run check         # so report.json với harness/expected.json (cổng CI) — cần reconcile chạy trước
 npm test              # test parity chức năng (lỗi hành vi mà recon không thấy)
+npm run exercise      # tự chấm bài tập tìm 8 lỗi (điền harness/my-findings.json trước)
 npm run reset         # xoá & build lại (deterministic)
 ```
 
@@ -66,6 +67,9 @@ harness/parity.test.mjs  test parity chức năng
 
 ## Người mới bắt đầu
 
-Đọc **[docs/practice-guide.md](docs/practice-guide.md)** — hướng dẫn từng bước làm việc với bản
-deploy, quy trình tự tìm 8 lỗi, và diễn giải chi tiết từng lỗi (nguyên nhân gốc SQL Server → GaussDB,
-vì sao nguy hiểm, cách viết assertion, cái bẫy thường gặp).
+1. **[docs/worksheet.md](docs/worksheet.md)** — bản để *làm*: 3 chặng theo độ khó, gọi API rồi
+   điền bảng, gợi ý bung dần. Ghi phát hiện vào `harness/my-findings.json` rồi `npm run exercise`
+   để tự chấm (không cần mở đáp án).
+2. **[docs/practice-guide.md](docs/practice-guide.md)** — bản để *đọc*: diễn giải chi tiết từng lỗi
+   (nguyên nhân gốc SQL Server → GaussDB, vì sao nguy hiểm, cách viết assertion, cái bẫy). Mở sau khi
+   chấm xong worksheet.

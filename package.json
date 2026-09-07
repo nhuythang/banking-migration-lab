@@ -14,6 +14,7 @@
     "reconcile": "node harness/reconcile.mjs",
     "check": "node harness/check.mjs",
     "snapshot": "node harness/snapshot.mjs",
+    "exercise": "node harness/exercise.mjs",
     "test": "node --test harness/",
     "reset": "rm -f old-system/*.db* new-system/*.db* && npm run build"
   },
