@@ -3,6 +3,9 @@
 > Dành cho người mới làm **API migration testing**. Đọc từ trên xuống. Phần "Diễn giải lỗi"
 > (mục 6) là **spoiler** — nên tự thử mục 5 trước rồi mới đối chiếu.
 >
+> **Muốn vừa làm vừa được chấm điểm?** Dùng [`worksheet.md`](worksheet.md) — 3 chặng theo độ khó,
+> điền bảng, `npm run exercise` tự chấm. Quay lại đây (mục 6) để đối chiếu sau.
+>
 > Tài liệu liên quan: [`README.md`](../README.md) (cách chạy) · [`BUGS.md`](../BUGS.md) (đáp án gọn) ·
 > [`HANDOFF.md`](../HANDOFF.md) (kiến trúc).
 
